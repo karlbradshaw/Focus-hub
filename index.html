@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Focus Hub</title>
+<meta name="theme-color" content="#111111" />
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Focus Hub">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --bg: #0f0f10;
+    --surface: #17181b;
+    --muted: #9aa0a6;
+    --text: #e9eaed;
+    --accent: #6ea8fe;
+    --ok: #34c759;
+    --warn: #ff9f0a;
+    --danger: #ff453a;
+
+    /* category colors */
+    --cat-housework: #34c759;  /* green */
+    --cat-etsy: #ff2d55;       /* pink/red */
+    --cat-freelance: #5e5ce6;  /* indigo */
+    --cat-personal: #ffd60a;   /* yellow */
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f7f7f8; --surface:#ffffff; --text:#0f0f10; --muted:#5f6368; --accent:#1a73e8;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font:16px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    color:var(--text); background:var(--bg);
+  }
+  .app{max-width:720px; margin:0 auto; min-height:100%; display:flex; flex-direction:column;}
+  header{position:sticky; top:0; z-index:10; background:var(--bg); padding:12px 16px 8px; border-bottom:1px solid #2a2b2f;}
+  .title{font-weight:700; letter-spacing:0.2px; display:flex; align-items:center; gap:10px}
+  .title .dot{width:10px; height:10px; border-radius:50%; background:var(--accent)}
+  .subtitle{color:var(--muted); font-size:13px; margin-top:2px}
+  .tabs{display:flex; gap:6px; margin-top:10px;}
+  .tab{flex:1; text-align:center; padding:10px 8px; border-radius:10px; background:var(--surface); color:var(--muted); border:1px solid #26272b; user-select:none;}
+  .tab[aria-selected="true"]{color:var(--text); border-color:var(--accent); outline:2px solid color-mix(in srgb, var(--accent) 35%, transparent);}
+  main{flex:1; padding:12px 12px 96px}
+  .card{background:var(--surface); border:1px solid #24262a; border-radius:12px; padding:12px; margin:10px 0}
+  .row{display:flex; gap:8px; align-items:center}
+  .grow{flex:1}
+  input[type="text"], select, input[type="time"], input[type="date"], input[type="number"]{width:100%; padding:12px 12px; border-radius:10px; border:1px solid #2a2c31; background:#121316; color:var(--text);}
+  input::placeholder{color:#7a7f86}
+  button{padding:10px 12px; border-radius:10px; border:1px solid #2a2c31; background:#1b1d22; color:var(--text);}
+  button.primary{border-color:var(--accent); background:color-mix(in srgb, var(--accent) 15%, #1b1d22)}
+  .pill{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:6px 9px; border-radius:999px; border:1px solid #2a2c31; background:#121316; color:var(--muted);}
+  .list{display:flex; flex-direction:column; gap:8px}
+  .todo{display:flex; align-items:flex-start; gap:10px; padding:10px; border:1px solid #2a2c31; border-radius:12px; background:#131418}
+  .todo.dragging{opacity:.6; outline:2px dashed var(--accent)}
+  .todo.done{opacity:.55; text-decoration:line-through}
+  .badge{font-size:11px; padding:2px 8px; border-radius:999px; color:#0b0b0c; font-weight:600}
+  .badge.housework{background:var(--cat-housework)}
+  .badge.etsy{background:var(--cat-etsy); color:white}
+  .badge.freelance{background:var(--cat-freelance); color:white}
+  .badge.personal{background:var(--cat-personal)}
+  .section-tabs{display:flex; gap:6px; margin:8px 0 4px}
+  .section-tabs button{flex:1}
+  .section-tabs button[aria-pressed="true"]{border-color:var(--accent)}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .spacer{height:8px}
+  .schedule-grid{display:flex; flex-direction:column; gap:8px;}
+  .block{border:1px solid #2a2c31; background:#121316; border-left:6px solid var(--accent); padding:10px; border-radius:10px;}
+  .habit{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px; border:1px solid #2a2c31; border-radius:12px; background:#131418}
+  .streak{font-weight:700}
+  .days{display:flex; gap:6px}
+  .daycheck{width:28px; height:28px; display:grid; place-items:center; border-radius:8px; border:1px solid #2a2c31; background:#121316; color:var(--muted)}
+  .daycheck[aria-checked="true"]{background:var(--ok); color:#0b0b0c; border-color:var(--ok); font-weight:700}
+  nav{position:sticky; bottom:0; z-index:10; background:var(--bg); border-top:1px solid #2a2b2f; padding:8px 12px;}
+  .actions{display:flex; gap:8px}
+  .actions > button{flex:1}
+  .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header role="banner">
+    <div class="title" aria-label="Focus Hub">
+      <span class="dot" aria-hidden="true"></span><span>Focus Hub</span>
+    </div>
+    <div class="subtitle small">Tabs: To-Dos • Schedule • Habits. Data saves locally. Works offline.</div>
+    <div class="tabs" role="tablist" aria-label="Main sections">
+      <button class="tab" role="tab" id="tab-todos" aria-controls="panel-todos" aria-selected="true">To-Dos</button>
+      <button class="tab" role="tab" id="tab-schedule" aria-controls="panel-schedule" aria-selected="false">Schedule</button>
+      <button class="tab" role="tab" id="tab-habits" aria-controls="panel-habits" aria-selected="false">Habits</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- TO-DOS -->
+    <section id="panel-todos" role="tabpanel" aria-labelledby="tab-todos">
+      <div class="card">
+        <div class="section-tabs" role="tablist" aria-label="To-Do Buckets">
+          <button class="pill" role="tab" data-bucket="today" aria-pressed="true">Today</button>
+          <button class="pill" role="tab" data-bucket="short" aria-pressed="false">Short Term</button>
+          <button class="pill" role="tab" data-bucket="long" aria-pressed="false">Long Term</button>
+        </div>
+        <div class="row">
+          <input id="todo-text" class="grow" type="text" placeholder="Add a task…" autocomplete="off" />
+          <select id="todo-cat" aria-label="Category">
+            <option value="housework">Housework</option>
+            <option value="etsy">Etsy</option>
+            <option value="freelance">Freelance</option>
+            <option value="personal">Personal</option>
+          </select>
+          <button id="add-todo" class="primary">Add</button>
+        </div>
+        <div class="spacer"></div>
+        <div class="row small muted">
+          <span class="pill"><span class="badge housework"></span> Housework</span>
+          <span class="pill"><span class="badge etsy"></span> Etsy</span>
+          <span class="pill"><span class="badge freelance"></span> Freelance</span>
+          <span class="pill"><span class="badge personal"></span> Personal</span>
+        </div>
+      </div>
+      <div id="todo-list" class="list" aria-live="polite"></div>
+    </section>
+
+    <!-- SCHEDULE -->
+    <section id="panel-schedule" role="tabpanel" aria-labelledby="tab-schedule" hidden>
+      <div class="card">
+        <div class="row">
+          <input id="sched-title" class="grow" type="text" placeholder="Block title (e.g., Deep work: Etsy)" />
+        </div>
+        <div class="row">
+          <input id="sched-date" type="date" class="grow" />
+          <input id="sched-start" type="time" />
+          <input id="sched-end" type="time" />
+          <select id="sched-cat" aria-label="Category">
+            <option value="housework">Housework</option>
+            <option value="etsy">Etsy</option>
+            <option value="freelance">Freelance</option>
+            <option value="personal">Personal</option>
+          </select>
+          <button id="add-block" class="primary">Add</button>
+        </div>
+        <div class="small muted" id="collision-msg" style="display:none;margin-top:6px;">⚠️ Time conflict detected. Blocks are still saved—adjust if needed.</div>
+      </div>
+      <div class="card">
+        <div class="row">
+          <input id="sched-date-view" type="date" class="grow" />
+          <button id="today-btn">Today</button>
+          <button id="clear-day" title="Remove all blocks for the day">Clear</button>
+        </div>
+      </div>
+      <div id="schedule-grid" class="schedule-grid" aria-live="polite"></div>
+    </section>
+
+    <!-- HABITS -->
+    <section id="panel-habits" role="tabpanel" aria-labelledby="tab-habits" hidden>
+      <div class="card">
+        <div class="row">
+          <input id="habit-name" class="grow" type="text" placeholder="New habit (e.g., Morning yoga, No vaping)" />
+          <input id="habit-goal" type="number" min="1" max="7" value="5" title="Weekly goal" />
+          <button id="add-habit" class="primary">Add</button>
+        </div>
+        <div class="small muted">Tap each day to mark it. Weekly goal = target checkmarks Mon–Sun. Streak counts consecutive full-goal weeks.</div>
+      </div>
+      <div id="habit-list" class="list" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <nav>
+    <div class="actions">
+      <button id="export-data">Export</button>
+      <button id="import-data">Import</button>
+      <button id="reset-all">Reset</button>
+    </div>
+  </nav>
+</div>
+
+<script>
+/* --------- State & Utilities ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const store = {
+  load(){
+    try{
+      return JSON.parse(localStorage.getItem('focushub_v1')) || { todos:{today:[],short:[],long:[]}, schedule:{}, habits:[] };
+    }catch{ return { todos:{today:[],short:[],long:[]}, schedule:{}, habits:[] }; }
+  },
+  save(){ localStorage.setItem('focushub_v1', JSON.stringify(state)); }
+};
+let state = store.load();
+
+const todayISO = () => new Date().toISOString().slice(0,10);
+const pad = n => String(n).padStart(2,'0');
+const timeToMinutes = t => { const [h,m] = t.split(':').map(Number); return h*60+m; };
+const minutesToTime = m => \`\${pad(Math.floor(m/60))}:\${pad(m%60)}\`;
+
+function categoryClass(cat){
+  return ({housework:'housework', etsy:'etsy', freelance:'freelance', personal:'personal'}[cat]||'personal');
+}
+
+/* --------- Tabs ---------- */
+function switchTab(id){
+  $$('.tab').forEach(btn => btn.setAttribute('aria-selected', String(btn.id === id)));
+  $$('main > section').forEach(sec => sec.hidden = (sec.id !== $('#'+id).getAttribute('aria-controls')));
+}
+$$('.tab').forEach(btn => btn.addEventListener('click', () => switchTab(btn.id)));
+
+/* --------- Quick Add via URL params ---------- */
+function parseQuery() {
+  const p = new URLSearchParams(location.search);
+  if (!p.has('quick')) return null;
+  const quick = p.get('quick');
+  const normBucket = (v) => (['today','short','long'].includes(v||'') ? v : 'today');
+  const normCat = (v) => (['housework','etsy','freelance','personal'].includes(v||'') ? v : 'personal');
+  if (quick === 'todo') {
+    const text = (p.get('text') || '').trim();
+    if (!text) return null;
+    return { type: 'todo', text, bucket: normBucket(p.get('bucket')), cat: normCat(p.get('cat')) };
+  }
+  return null;
+}
+function handleQuickAdd(q) {
+  if (!q) return;
+  if (q.type === 'todo') {
+    state.todos[q.bucket].push({ id:crypto.randomUUID(), text:q.text, cat:q.cat, done:false, created: Date.now() });
+    activeBucket = q.bucket;
+    store.save();
+    history.replaceState({}, document.title, location.pathname);
+    // Tiny toast
+    try {
+      const note = document.createElement('div');
+      note.textContent = \`Added to \${q.bucket}: \${q.text}\`;
+      Object.assign(note.style,{position:'fixed',left:'50%',bottom:'20px',transform:'translateX(-50%)',background:'#1b1d22',color:'white',padding:'10px 12px',borderRadius:'10px',border:'1px solid #2a2c31',zIndex:9999});
+      document.body.appendChild(note);
+      setTimeout(()=>note.remove(), 1500);
+    } catch(e){}
+    renderTodos();
+    switchTab('tab-todos');
+  }
+}
+
+/* --------- To-Dos ---------- */
+let activeBucket = 'today';
+function renderTodos(){
+  $$('.section-tabs button').forEach(b=>{ b.setAttribute('aria-pressed', String(b.dataset.bucket===activeBucket)); });
+  const list = $('#todo-list'); list.innerHTML='';
+  const items = state.todos[activeBucket];
+  if(!items.length){
+    const empty = document.createElement('div');
+    empty.className='card small muted';
+    empty.textContent='No tasks yet. Add one above.';
+    list.appendChild(empty);
+  } else {
+    items.forEach((t,i)=>{
+      const el = document.createElement('div'); el.className='todo'+(t.done?' done':''); el.setAttribute('draggable','true'); el.dataset.index=i;
+      el.innerHTML = \`
+        <input type="checkbox" \${t.done?'checked':''} aria-label="Mark done">
+        <div class="grow">
+          <div>\${t.text}</div>
+          <div class="small muted">Added \${new Date(t.created).toLocaleString()}</div>
+        </div>
+        <span class="badge \${categoryClass(t.cat)}">\${t.cat[0].toUpperCase()+t.cat.slice(1)}</span>
+        <button title="Move">⋯</button>
+        <button title="Delete">✕</button>
+      \`;
+      const [chk, , , moveBtn, delBtn] = el.querySelectorAll('input, .grow, .badge, button, button');
+      chk.addEventListener('change', ()=>{ t.done = chk.checked; store.save(); el.classList.toggle('done', t.done); });
+      moveBtn.addEventListener('click', ()=>{
+        const options = ['today','short','long'].filter(b=>b!==activeBucket);
+        const dest = prompt(\`Move to: \${options.join(', ')}\`, options[0] || 'today');
+        if(dest && state.todos[dest]){ state.todos[activeBucket].splice(i,1); state.todos[dest].push(t); store.save(); renderTodos(); }
+      });
+      delBtn.addEventListener('click', ()=>{
+        if(confirm('Delete this task?')){ state.todos[activeBucket].splice(i,1); store.save(); renderTodos(); }
+      });
+      list.appendChild(el);
+    });
+  }
+  addTodoDnDHandlers();
+}
+$('.section-tabs').addEventListener('click', (e)=>{
+  const b = e.target.closest('button[data-bucket]'); if(!b) return;
+  activeBucket = b.dataset.bucket; renderTodos();
+});
+$('#add-todo').addEventListener('click', ()=>{
+  const text = $('#todo-text').value.trim();
+  const cat = $('#todo-cat').value;
+  if(!text) return;
+  state.todos[activeBucket].push({ id:crypto.randomUUID(), text, cat, done:false, created: Date.now() });
+  $('#todo-text').value=''; store.save(); renderTodos();
+});
+$('#todo-text').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#add-todo').click(); });
+
+/* Drag & Drop handlers */
+let dragSrc = null;
+function addTodoDnDHandlers() {
+  $$('#todo-list .todo').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      dragSrc = { idx: Number(el.dataset.index) };
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', el.dataset.index); } catch(e){}
+      el.classList.add('dragging');
+    });
+    el.addEventListener('dragend', () => { dragSrc = null; el.classList.remove('dragging'); });
+    el.addEventListener('dragover', e => e.preventDefault());
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragSrc) return;
+      const from = dragSrc.idx;
+      const to = Number(el.dataset.index);
+      if (from === to) return;
+      const arr = state.todos[activeBucket];
+      const [moved] = arr.splice(from, 1);
+      arr.splice(to, 0, moved);
+      store.save(); renderTodos();
+    });
+  });
+  $$('.section-tabs button[data-bucket]').forEach(pill => {
+    pill.addEventListener('dragover', e => e.preventDefault());
+    pill.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragSrc) return;
+      const sourceArr = state.todos[activeBucket];
+      const [moved] = sourceArr.splice(dragSrc.idx, 1);
+      const dest = pill.dataset.bucket;
+      state.todos[dest].push(moved);
+      activeBucket = dest;
+      store.save(); renderTodos();
+    });
+  });
+}
+
+/* --------- Schedule ---------- */
+function defaultTimes(){
+  const now = new Date();
+  const start = \`\${pad(now.getHours())}:\${pad(now.getMinutes())}\`;
+  const endMin = Math.min(timeToMinutes(start)+60, 23*60+59);
+  return { start, end: minutesToTime(endMin) };
+}
+function renderSchedule(dateStr){
+  const grid = $('#schedule-grid'); grid.innerHTML='';
+  const blocks = (state.schedule[dateStr]||[]).slice().sort((a,b)=>timeToMinutes(a.start)-timeToMinutes(b.start));
+  if(!blocks.length){
+    const empty = document.createElement('div');
+    empty.className='card small muted';
+    empty.textContent='No blocks yet. Add one above.';
+    grid.appendChild(empty);
+    return;
+  }
+  blocks.forEach((b,idx)=>{
+    const el = document.createElement('div');
+    el.className='block';
+    el.style.borderLeftColor = getComputedStyle(document.documentElement).getPropertyValue('--cat-'+categoryClass(b.cat)).trim() || 'var(--accent)';
+    el.innerHTML = \`
+      <div class="row">
+        <div class="grow"><strong>\${b.title}</strong><div class="small muted">\${b.start}–\${b.end}</div></div>
+        <span class="badge \${categoryClass(b.cat)}">\${b.cat[0].toUpperCase()+b.cat.slice(1)}</span>
+        <button title="Edit">✎</button>
+        <button title="Delete">✕</button>
+      </div>
+    \`;
+    const [ , , editBtn, delBtn] = el.querySelectorAll('.grow, .badge, button, button');
+    editBtn.addEventListener('click', ()=>{
+      const title = prompt('Title', b.title) ?? b.title;
+      const start = prompt('Start (HH:MM)', b.start) ?? b.start;
+      const end   = prompt('End (HH:MM)', b.end) ?? b.end;
+      b.title = title; b.start = start; b.end = end; store.save(); renderSchedule(dateStr);
+    });
+    delBtn.addEventListener('click', ()=>{
+      if(confirm('Delete this block?')){ state.schedule[dateStr].splice(idx,1); store.save(); renderSchedule(dateStr); }
+    });
+    grid.appendChild(el);
+  });
+}
+function addBlock(){
+  const title = $('#sched-title').value.trim(); if(!title) return;
+  const date = $('#sched-date').value || todayISO();
+  const start = $('#sched-start').value || defaultTimes().start;
+  const end = $('#sched-end').value || defaultTimes().end;
+  const cat = $('#sched-cat').value;
+  const block = { id:crypto.randomUUID(), title, date, start, end, cat };
+  state.schedule[date] ??= [];
+  const newStart = timeToMinutes(start), newEnd = timeToMinutes(end);
+  let conflict = false;
+  for(const b of state.schedule[date]){
+    const s = timeToMinutes(b.start), e = timeToMinutes(b.end);
+    if(Math.max(s,newStart) < Math.min(e,newEnd)){ conflict = true; break; }
+  }
+  $('#collision-msg').style.display = conflict ? 'block' : 'none';
+  state.schedule[date].push(block); store.save();
+  $('#sched-title').value='';
+  $('#sched-date-view').value = date;
+  renderSchedule(date);
+}
+$('#add-block').addEventListener('click', addBlock);
+$('#today-btn').addEventListener('click', ()=>{ $('#sched-date-view').value = todayISO(); renderSchedule(todayISO()); });
+$('#clear-day').addEventListener('click', ()=>{
+  const d = $('#sched-date-view').value || todayISO();
+  if(!state.schedule[d]?.length) return;
+  if(confirm('Delete all blocks for this day?')){ state.schedule[d] = []; store.save(); renderSchedule(d); }
+});
+
+/* --------- Habits ---------- */
+function weekKey(d=new Date()){
+  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = (dt.getUTCDay()+6)%7; // 0=Mon
+  dt.setUTCDate(dt.getUTCDate()-day);
+  const year = dt.getUTCFullYear();
+  const jan1 = new Date(Date.UTC(year,0,1));
+  const week = Math.floor((dt-jan1)/ (7*24*3600*1000)) + 1;
+  return \`\${year}-W\${String(week).padStart(2,'0')}\`;
+}
+function renderHabits(){
+  const list = $('#habit-list'); list.innerHTML='';
+  if(!state.habits.length){
+    const empty = document.createElement('div'); empty.className='card small muted';
+    empty.textContent='No habits yet. Add one above.';
+    list.appendChild(empty); return;
+  }
+  const today = new Date();
+  const week = weekKey(today);
+
+  state.habits.forEach((h,i)=>{
+    h.weeks ??= {}; h.weeks[week] ??= {days:[false,false,false,false,false,false,false], goal:h.goal||5};
+    const data = h.weeks[week];
+    const sum = data.days.filter(Boolean).length;
+    const hitGoal = sum >= (data.goal||5);
+    let streak = 0;
+    let cur = new Date(today);
+    while(true){
+      const wk = weekKey(cur);
+      const w = h.weeks[wk];
+      if(w && w.days.filter(Boolean).length >= (w.goal||5)){ streak++; cur.setDate(cur.getDate()-7); }
+      else break;
+    }
+    const el = document.createElement('div');
+    el.className='habit';
+    el.innerHTML = \`
+      <div class="grow">
+        <strong>\${h.name}</strong>
+        <div class="small muted">Goal \${data.goal}/wk • <span class="streak">\${streak} wk streak</span>\${hitGoal?' ✅':''}</div>
+      </div>
+      <div class="days" role="group" aria-label="Week checks Mon–Sun"></div>
+      <button title="Edit">✎</button>
+      <button title="Delete">✕</button>
+    \`;
+    const daysWrap = el.querySelector('.days');
+    for(let d=0; d<7; d++){
+      const btn = document.createElement('button');
+      btn.className='daycheck';
+      btn.setAttribute('aria-checked', String(data.days[d]));
+      btn.textContent = 'MTWTFSS'[d];
+      btn.addEventListener('click', ()=>{
+        data.days[d] = !data.days[d]; btn.setAttribute('aria-checked', String(data.days[d]));
+        store.save(); renderHabits();
+      });
+      daysWrap.appendChild(btn);
+    }
+    const [editBtn, delBtn] = el.querySelectorAll('button[title]');
+    editBtn.addEventListener('click', ()=>{
+      const name = prompt('Habit name', h.name) ?? h.name;
+      const goal = Number(prompt('Weekly goal (1–7)', h.goal || data.goal)) || (h.goal||data.goal);
+      h.name = name; h.goal = Math.min(7, Math.max(1, goal));
+      data.goal = h.goal; store.save(); renderHabits();
+    });
+    delBtn.addEventListener('click', ()=>{
+      if(confirm('Delete this habit?')){ state.habits.splice(i,1); store.save(); renderHabits(); }
+    });
+    list.appendChild(el);
+  });
+}
+$('#add-habit').addEventListener('click', ()=>{
+  const name = $('#habit-name').value.trim(); if(!name) return;
+  const goal = Math.min(7, Math.max(1, Number($('#habit-goal').value)||5));
+  state.habits.push({ id:crypto.randomUUID(), name, goal, weeks:{} });
+  $('#habit-name').value=''; store.save(); renderHabits();
+});
+
+/* --------- Import / Export / Reset ---------- */
+$('#export-data').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = \`focushub-backup-\${new Date().toISOString().slice(0,10)}.json\`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+$('#import-data').addEventListener('click', async ()=>{
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = 'application/json';
+  input.onchange = () => {
+    const file = input.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const data = JSON.parse(reader.result);
+        if(!data.todos || !data.schedule || !Array.isArray(data.habits)) throw new Error('Invalid file');
+        state = data; store.save(); initUI();
+        alert('Imported successfully.');
+      }catch(e){ alert('Import failed: '+e.message); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+});
+$('#reset-all').addEventListener('click', ()=>{
+  if(!confirm('This wipes all data. Continue?')) return;
+  state = { todos:{today:[],short:[],long:[]}, schedule:{}, habits:[] };
+  store.save(); initUI();
+});
+
+/* --------- Init ---------- */
+function initUI(){
+  $('#sched-date').value = todayISO();
+  const t = defaultTimes(); $('#sched-start').value = t.start; $('#sched-end').value=t.end;
+  $('#sched-date-view').value = todayISO();
+  renderTodos(); renderSchedule(todayISO()); renderHabits();
+}
+const q = parseQuery(); // Quick Add first (so the item appears immediately)
+handleQuickAdd(q);
+initUI();
+
+// Accessibilty: arrow keys for top tabs
+let tabIndex = 0;
+document.addEventListener('keydown', e=>{
+  const tabs = $$('.tabs .tab');
+  if(['ArrowLeft','ArrowRight'].includes(e.key) && document.activeElement.closest('.tabs')){
+    e.preventDefault();
+    tabIndex = (tabIndex + (e.key==='ArrowRight'?1:tabs.length-1)) % tabs.length;
+    tabs[tabIndex].focus(); tabs[tabIndex].click();
+  }
+});
+
+// PWA: register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
+}
+</script>
+</body>
+</html>
