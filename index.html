@@ -11,45 +11,35 @@
 <meta name="apple-mobile-web-app-title" content="Focus Hub">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
-  /* ========= Palette tuned to your greens ========= */
   :root{
-    --bg: #10261f;                /* deep green */
+    --bg: #10261f;
     --grid-line: rgba(255,255,255,.06);
-    --surface: #132e25;           /* dark card */
+    --surface: #132e25;
     --text: #e7efe9;
     --muted: #a7b9ae;
-    --accent: #98e0b1;            /* mint highlight */
+    --accent: #98e0b1;
     --accent-strong: #6bc38f;
     --ok: #aee6bd;
     --warn: #ffd699;
     --danger: #ff6b6b;
 
-    /* category colors (harmonised) */
-    --cat-housework: #98e0b1;     /* mint */
-    --cat-etsy: #f3c5ac;          /* soft peach */
-    --cat-freelance: #9bc7b9;     /* seafoam */
-    --cat-personal: #e1f4d8;      /* pale green */
+    --cat-housework: #98e0b1;
+    --cat-etsy: #f3c5ac;
+    --cat-freelance: #9bc7b9;
+    --cat-personal: #e1f4d8;
   }
   @media (prefers-color-scheme: light){
     :root{
-      --bg:#e7efe9;
-      --grid-line: rgba(16,38,31,.08);
-      --surface:#ffffff;
-      --text:#0d1814;
-      --muted:#476456;
-      --accent:#1e8e61;
-      --accent-strong:#166e4b;
+      --bg:#e7efe9; --grid-line: rgba(16,38,31,.08); --surface:#ffffff; --text:#0d1814; --muted:#476456; --accent:#1e8e61; --accent-strong:#166e4b;
     }
   }
 
-  /* ========= Typography ========= */
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
     margin:0;
     font:16px/1.35 "Gill Sans", "Gill Sans MT", "Gill Sans Nova", Calibri, "Trebuchet MS", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     color:var(--text);
-    /* grid paper background */
     background:
       repeating-linear-gradient(0deg, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent 16px),
       repeating-linear-gradient(90deg, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent 16px),
@@ -58,17 +48,18 @@
 
   .app{max-width:720px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;}
 
-  header{position:sticky;top:0;z-index:10;background:transparent;padding:12px 16px 8px;backdrop-filter:saturate(140%) blur(2px)}
+  header{
+    position:sticky; top:0; z-index:10; background:transparent;
+    padding: calc(10px + env(safe-area-inset-top)) 16px 8px; /* safe area for notch */
+    backdrop-filter:saturate(140%) blur(2px);
+  }
   .title{
     font-weight:700; letter-spacing:.08em; text-transform:uppercase;
     display:flex; align-items:center; gap:10px
   }
   .title .dot{width:10px; height:10px; border-radius:50%; background:var(--accent)}
-  .subtitle{color:var(--muted); font-size:13px; margin-top:2px; letter-spacing:.06em; text-transform:uppercase}
 
-  .tabs{
-    display:flex; gap:8px; margin-top:12px;
-  }
+  .tabs{ display:flex; gap:8px; margin-top:12px; }
   .tab{
     flex:1; text-align:center; padding:12px 10px; border-radius:12px;
     background:linear-gradient(180deg, rgba(152,224,177,.10), rgba(152,224,177,.06));
@@ -76,16 +67,15 @@
     user-select:none; letter-spacing:.08em; text-transform:uppercase; font-weight:700;
   }
   .tab[aria-selected="true"]{
-    color:var(--text);
-    border-color: var(--accent);
+    color:var(--text); border-color: var(--accent);
     background: linear-gradient(180deg, rgba(152,224,177,.25), rgba(152,224,177,.12));
     outline:2px solid color-mix(in srgb, var(--accent) 35%, transparent);
   }
 
-  main{flex:1; padding:12px 12px 96px}
+  main{flex:1; padding:12px 12px calc(96px + env(safe-area-inset-bottom));}
 
   .card{background:var(--surface); border:1px solid rgba(152,224,177,.18); border-radius:14px; padding:12px; margin:10px 0}
-  .row{display:flex; gap:8px; align-items:center}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
   .grow{flex:1}
   input[type="text"], select, input[type="time"], input[type="date"], input[type="number"]{
     width:100%; padding:12px 12px; border-radius:10px; border:1px solid rgba(152,224,177,.25); background:#0c221b; color:var(--text);
@@ -117,36 +107,50 @@
   .badge.personal{background:var(--cat-personal)}
 
   .section-tabs{display:flex; gap:8px; margin:8px 0 6px}
-  .section-tabs button{flex:1}
+  .section-tabs button{flex:1; min-width:0}
   .section-tabs button[aria-pressed="true"]{border-color:var(--accent); background:linear-gradient(180deg, rgba(152,224,177,.22), rgba(152,224,177,.1)); color:var(--text)}
 
   .muted{color:var(--muted)}
   .small{font-size:12px}
   .spacer{height:8px}
 
-  /* Schedule */
-  .schedule-grid{display:flex; flex-direction:column; gap:8px;}
-  .block{border:1px solid rgba(152,224,177,.25); background:#0c221b; border-left:6px solid var(--accent-strong); padding:10px; border-radius:10px;}
-
-  /* Habits */
-  .habit{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px; border:1px solid rgba(152,224,177,.25); border-radius:12px; background:#0e251e}
-  .streak{font-weight:700}
-  .days{display:flex; gap:6px}
-  .daycheck{width:28px; height:28px; display:grid; place-items:center; border-radius:8px; border:1px solid rgba(152,224,177,.25); background:#0c221b; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; font-weight:700}
-  .daycheck[aria-checked="true"]{background:var(--ok); color:#0b0b0c; border-color:var(--ok)}
-
-  /* Bottom bar */
-  nav{position:sticky; bottom:0; z-index:10; background:linear-gradient(180deg, transparent, rgba(0,0,0,.35)); border-top:1px solid rgba(152,224,177,.18); padding:8px 12px;}
-  .actions{display:flex; gap:8px}
-  .actions > button{flex:1}
-
-  /* Bigger "Add task" input */
-  .todo-input-wrap{display:flex; gap:8px; align-items:stretch}
+  /* To-do input row: responsive grid so the text field never shrinks */
+  .todo-input-wrap{
+    display:grid;
+    grid-template-columns: 1fr auto auto;
+    gap:8px;
+    align-items:stretch;
+  }
+  #todo-cat{min-width:132px}
+  @media (max-width: 420px){
+    .todo-input-wrap{ grid-template-columns: 1fr; }
+    #todo-cat{ width:100%; }
+    #add-todo{ width:100%; }
+  }
   .todo-input{
     flex:1; padding:16px 16px; font-size:18px; border-radius:12px; border:1px solid rgba(152,224,177,.28); background:#0a1e19; color:var(--text);
   }
   .todo-input::placeholder{color:#97a89f; font-style:italic}
-  #todo-cat{min-width:134px}
+
+  /* Category chip row wraps neatly */
+  .pill-list{ display:flex; flex-wrap:wrap; gap:8px; }
+  .pill-list .pill{ flex: 1 1 auto; }
+
+  /* Schedule */
+  .schedule-grid{display:flex; flex-direction:column; gap:8px;}
+  .block{border:1px solid rgba(152,224,177,.25); background:#0c221b; border-left:6px solid var(--accent-strong); padding:10px; border-radius:10px;}
+
+  /* Habits: number on the left, title big on the right */
+  .habit-form{ display:grid; grid-template-columns: 84px 1fr auto; gap:8px; align-items:stretch; }
+  .habit-goal{ text-align:center; font-weight:700; }
+  @media (max-width: 420px){
+    .habit-form{ grid-template-columns: 84px 1fr; }
+    #add-habit{ grid-column: 1 / -1; }
+  }
+
+  nav{position:sticky; bottom:0; z-index:10; background:linear-gradient(180deg, transparent, rgba(0,0,0,.35)); border-top:1px solid rgba(152,224,177,.18); padding:8px 12px env(safe-area-inset-bottom);}
+  .actions{display:flex; gap:8px}
+  .actions > button{flex:1}
 </style>
 </head>
 <body>
@@ -155,7 +159,6 @@
     <div class="title" aria-label="Focus Hub">
       <span class="dot" aria-hidden="true"></span><span>Focus Hub</span>
     </div>
-    <div class="subtitle small">Tabs: To-Dos • Schedule • Habits. Data saves locally. Works offline.</div>
     <div class="tabs" role="tablist" aria-label="Main sections">
       <button class="tab" role="tab" id="tab-todos" aria-controls="panel-todos" aria-selected="true" type="button">To-Dos</button>
       <button class="tab" role="tab" id="tab-schedule" aria-controls="panel-schedule" aria-selected="false" type="button">Schedule</button>
@@ -164,7 +167,6 @@
   </header>
 
   <main>
-    <!-- TO-DOS -->
     <section id="panel-todos" role="tabpanel" aria-labelledby="tab-todos">
       <div class="card">
         <div class="section-tabs" role="tablist" aria-label="To-Do Buckets">
@@ -183,7 +185,7 @@
           <button id="add-todo" class="primary" type="button">Add</button>
         </div>
         <div class="spacer"></div>
-        <div class="row small muted">
+        <div class="pill-list small muted">
           <span class="pill"><span class="badge housework"></span> Housework</span>
           <span class="pill"><span class="badge etsy"></span> Etsy</span>
           <span class="pill"><span class="badge freelance"></span> Freelance</span>
@@ -193,7 +195,6 @@
       <div id="todo-list" class="list" aria-live="polite"></div>
     </section>
 
-    <!-- SCHEDULE -->
     <section id="panel-schedule" role="tabpanel" aria-labelledby="tab-schedule" hidden>
       <div class="card">
         <div class="row">
@@ -223,15 +224,14 @@
       <div id="schedule-grid" class="schedule-grid" aria-live="polite"></div>
     </section>
 
-    <!-- HABITS -->
     <section id="panel-habits" role="tabpanel" aria-labelledby="tab-habits" hidden>
       <div class="card">
-        <div class="row">
-          <input id="habit-name" class="grow" type="text" placeholder="New habit (e.g., Morning yoga, No vaping)" />
-          <input id="habit-goal" type="number" min="1" max="7" value="5" title="Weekly goal" />
+        <div class="habit-form">
+          <input id="habit-goal" class="habit-goal" type="number" min="1" max="7" value="5" title="Weekly goal" />
+          <input id="habit-name" class="grow" type="text" placeholder="Add a habit title…" />
           <button id="add-habit" class="primary" type="button">Add</button>
         </div>
-        <div class="small muted">Tap each day to mark it. Weekly goal = target checkmarks Mon–Sun. Streak counts consecutive full-goal weeks.</div>
+        <div class="small muted" style="margin-top:8px;">Tap each day to mark it. Weekly goal = target checkmarks Mon–Sun. Streak counts consecutive full-goal weeks.</div>
       </div>
       <div id="habit-list" class="list" aria-live="polite"></div>
     </section>
@@ -247,26 +247,19 @@
 </div>
 
 <script>
-/* --------- State & Utilities ---------- */
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 const store = {
-  load(){
-    try{
-      return JSON.parse(localStorage.getItem('focushub_v1')) || { todos:{today:[],short:[],long:[]}, schedule:{}, habits:[] };
-    }catch{ return { todos:{today:[],short:[],long:[]}, schedule:{}, habits:[] }; }
-  },
+  load(){ try{ return JSON.parse(localStorage.getItem('focushub_v1')) || { todos:{today:[],short:[],long:[]}, schedule:{}, habits:[] }; }catch{ return { todos:{today:[],short:[],long:[]}, schedule:{}, habits:[] }; } },
   save(){ localStorage.setItem('focushub_v1', JSON.stringify(state)); }
 };
 let state = store.load();
-
 const todayISO = () => new Date().toISOString().slice(0,10);
 const pad = n => String(n).padStart(2,'0');
 const timeToMinutes = t => { const [h,m] = t.split(':').map(Number); return h*60+m; };
 const minutesToTime = m => `${pad(Math.floor(m/60))}:${pad(m%60)}`;
 function categoryClass(cat){ return ({housework:'housework', etsy:'etsy', freelance:'freelance', personal:'personal'}[cat]||'personal'); }
 
-/* --------- Tabs (hash-based, iOS-safe) ---------- */
 const panels = { 'todos':'panel-todos', 'schedule':'panel-schedule', 'habits':'panel-habits' };
 function showTab(name){
   const tabId = 'tab-' + name;
@@ -287,7 +280,6 @@ window.addEventListener('hashchange', ()=>{
 });
 showTab((location.hash.replace('#','') || 'todos'));
 
-/* --------- Quick Add via URL params ---------- */
 function parseQuery() {
   const p = new URLSearchParams(location.search);
   if (!p.has('quick')) return null;
@@ -316,7 +308,6 @@ function handleQuickAdd(q) {
   }
 }
 
-/* --------- To-Dos ---------- */
 let activeBucket = 'today';
 function renderTodos(){
   $$('.section-tabs button').forEach(b=>{ b.setAttribute('aria-pressed', String(b.dataset.bucket===activeBucket)); });
@@ -552,50 +543,16 @@ document.getElementById('add-habit').addEventListener('click', ()=>{
   document.getElementById('habit-name').value=''; store.save(); renderHabits();
 });
 
-/* --------- Import / Export / Reset ---------- */
-document.getElementById('export-data').addEventListener('click', ()=>{
-  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `focushub-backup-${new Date().toISOString().slice(0,10)}.json`;
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-});
-document.getElementById('import-data').addEventListener('click', async ()=>{
-  const input = document.createElement('input');
-  input.type = 'file'; input.accept = 'application/json';
-  input.onchange = () => {
-    const file = input.files[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try{
-        const data = JSON.parse(reader.result);
-        if(!data.todos || !data.schedule || !Array.isArray(data.habits)) throw new Error('Invalid file');
-        state = data; store.save(); initUI();
-        alert('Imported successfully.');
-      }catch(e){ alert('Import failed: '+e.message); }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
-});
-document.getElementById('reset-all').addEventListener('click', ()=>{
-  if(!confirm('This wipes all data. Continue?')) return;
-  state = { todos:{today:[],short:[],long:[]}, schedule:{}, habits:[] };
-  store.save(); initUI();
-});
-
-/* --------- Init ---------- */
 function initUI(){
   document.getElementById('sched-date').value = todayISO();
   const t = defaultTimes(); document.getElementById('sched-start').value = t.start; document.getElementById('sched-end').value=t.end;
   document.getElementById('sched-date-view').value = todayISO();
-  const q = parseQuery(); handleQuickAdd(q);
+  const q = (function(){ const p=new URLSearchParams(location.search); return p.has('quick')?{type:'todo',text:(p.get('text')||'').trim(),bucket:(['today','short','long'].includes(p.get('bucket'))?p.get('bucket'):'today'),cat:(['housework','etsy','freelance','personal'].includes(p.get('cat'))?p.get('cat'):'personal')}:null; })();
+  if(q && q.text){ state.todos[q.bucket].push({ id:crypto.randomUUID(), text:q.text, cat:q.cat, done:false, created: Date.now() }); store.save(); history.replaceState({}, document.title, location.pathname + location.hash); }
   renderTodos(); renderSchedule(todayISO()); renderHabits();
 }
 initUI();
 
-// PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
 }
